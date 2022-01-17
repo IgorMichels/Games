@@ -1,2 +1,2 @@
-# Rubiks_Cube
-Simulation and solution of Rubik's Cube
+# Games
+Simulation and solution of some games
