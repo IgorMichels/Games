@@ -308,7 +308,7 @@ def solve(cube, depth = 0, seq = [], max_depth = 20):
 						return sol
 		 
 sequence = ['Up', 'L2', 'D2', 'F2', 'R2', 'B2', 'R2', 'F2', 'D2', 'Lp', 'Up', 'Rp', 'B', 'Fp', 'Up']
-sequence = ['U2', 'D2', 'L2', 'R2', 'F2', 'B2']
+sequence = ['U2', 'D2', 'L2', 'R2']#, 'F2', 'B2']
 make_moves(cube, sequence)
 print_cube(cube)
 sol = solve(cube, depth = 0, seq = [], max_depth = 5)
