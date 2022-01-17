@@ -1,3 +1,9 @@
+'''
+Solution of 0h h1 game (https://0hh1.com)
+
+Author : Igor Patrício Michels
+'''
+
 import numpy as np
 from os import system
 
