@@ -5,7 +5,12 @@ Author : Igor Patrício Michels
 '''
 
 import numpy as np
-from os import system
+from os import system, name
+
+if name == 'nt':
+	limpar = 'cls'
+else:
+	limpar = 'clear'
 
 w = '\033[97m\033[107m\u2588\033[0m'
 b = '\033[94m\033[104m\u2588\033[0m'
@@ -54,14 +59,14 @@ def input_tabuleiro(tabuleiro):
 			print_tabuleiro(tabuleiro)
 			cor = int(input(f'Digite a cor da casa selecionada (0 para {w}, 1 para {r} e 2 para {b}): '))
 			while cor not in [0, 1, 2]:
-				system('clear')
+				system(limpar)
 				print('A cor deve ser 0, 1 ou 2')
 				print()
 				print_tabuleiro(tabuleiro)
 				cor = int(input(f'Digite a cor da casa selecionada (0 para {w}, 1 para {r} e 2 para {b}): '))
 			
 			tabuleiro[i, j] = cor
-			system('clear')
+			system(limpar)
 			
 	return tabuleiro
 
@@ -237,14 +242,14 @@ def resolve(tabuleiro):
 		
 	return tabuleiro
 
-system('clear')
+system(limpar)
 n = float(input('Qual a dimensão do tabuleiro? '))
 while n.is_integer() == False or int(n) % 2 == 1 or int(n) < 3:
-	system('clear')
+	system(limpar)
 	print('A dimensão deve ser um inteiro par maior que 2!')
 	n = float(input('Qual a dimensão do tabuleiro? '))
 	
-system('clear')
+system(limpar)
 n = int(n)
 tabuleiro = [[4 for i in range(n)] for j in range(n)]
 tabuleiro = np.array(tabuleiro, dtype = int)
@@ -255,7 +260,7 @@ tabuleiro = resolve(tabuleiro)
 print_tabuleiro(tabuleiro)
 
 '''
-system('clear')
+system(limpar)
 n = 8
 tabuleiro = np.array([[0, 0, 0, 2, 0, 0, 0, 2],
 					  [0, 0, 0, 0, 1, 0, 0, 0],
