@@ -1,6 +1,13 @@
-import numpy as np
-from copy import deepcopy
 import time
+import numpy as np
+import random as rd
+from copy import deepcopy
+from os import system, name
+
+if name == 'nt':
+	limpar = 'cls'
+else:
+	limpar = 'clear'
 
 def print_position(position):
 	luc = '\u250c'
@@ -30,10 +37,30 @@ def print_position(position):
 		else:
 			print(lbc + (h + bc) * 2 + h + rbc)
 
+def check_parity(position):
+	game = []
+	for row in position:
+		game += row
+		
+	game.remove(0)
+	game = np.array(game)
+	parity = 0
+	for i in range(len(game)):
+		parity += sum(game[i:] > game[i])
+		
+	return parity % 2
+
+def generate_game():
+	while True:
+		game = [*range(9)]
+		rd.shuffle(game)
+		game = np.array(game).reshape((3, 3))
+		game = game.tolist()
+		if check_parity(game) == 0:
+			return game
+
 def find_moves(position):
-	position = np.array(position)
-	r, c = np.where(position == 0)
-	r, c = r[0], c[0]
+	r, c = find_piece(position, 0)
 	moves = []
 	for change in [-1, 1]:
 		if c + change in [0, 1, 2]:
@@ -66,6 +93,10 @@ def make_moves(position, moves, printing = False):
 	return new_position
 
 def solve_game_bf(game, goal, max_iter = 10000):
+	if check_parity(game) == 1:
+		print('Game without solution')
+		return None
+	
 	positions = [game]
 	moves_to_pos = [[]]
 	k = 0
@@ -85,13 +116,9 @@ def solve_game_bf(game, goal, max_iter = 10000):
 
 def h(position, goal):
 	cost = 0
-	position, goal = np.array(position), np.array(goal)
 	for i in range(1, 9):
-		r1, c1 = np.where(position == i)
-		r1, c1 = r1[0], c1[0]
-		
-		r2, c2 = np.where(goal == i)
-		r2, c2 = r2[0], c2[0]
+		r1, c1 = find_piece(position, i)
+		r2, c2 = find_piece(goal, i)
 		
 		cost += abs(r1 - r2)
 		cost += abs(c1 - c2)
@@ -105,6 +132,13 @@ def f(position, goal, moves):
 	return g_cost + h_cost
 	
 def solve_game_a_star(game, goal, max_iter = 100000):
+	if check_parity(game) == 1:
+		print('Game without solution')
+		return None
+	elif game == goal:
+		print('Game already solved')
+		return []
+	
 	open_positions = [game]
 	close_positions = []
 	moves_to_o_pos = [[]]
@@ -118,10 +152,10 @@ def solve_game_a_star(game, goal, max_iter = 100000):
 		i = np.argmin(f_values)
 		position = open_positions.pop(i)
 		moves = moves_to_o_pos.pop(i)
-		if position == goal:
-			return moves
+		new_positions, new_moves = possible_positions(position, moves, goal)
+		if new_positions == True:
+			return new_moves
 		
-		new_positions, new_moves = possible_positions(position, moves)
 		for i, pos in enumerate(new_positions):
 			if pos not in open_positions and pos not in close_positions:
 				open_positions.append(pos)
@@ -131,37 +165,60 @@ def solve_game_a_star(game, goal, max_iter = 100000):
 		moves_to_c_pos.append(moves)
 		it += 1
 
-def possible_positions(position, moves):
+def possible_positions(position, moves, goal):
 	possible_moves = find_moves(position)
 	new_positions = []
 	new_moves = []
 	for move in possible_moves:
 		new_position = deepcopy(position)
 		new_position = make_move(new_position, move)
+		if new_position == goal:
+			return True, moves + [move]
+		
 		new_positions.append(new_position)
 		new_moves.append(moves + [move])
 		
 	return new_positions, new_moves
 
-game = [[7, 2, 4],
-     	[5, 0, 6],
-		[8, 3, 1]]
-		
-goal = [[1, 2, 3],
-		[4, 5, 6],
-		[7, 8, 0]]
-
-t = time.time()
-moves = None
-#moves = solve_game_bf(game, goal, max_iter = 50000)
-tf = time.time()
-if moves != None:
-	print(f'Solved (using Brute Force) in {round(tf - t, 4)} seconds with {len(moves)} moves')
-
-t = time.time()
-#moves = solve_game_a_star(game, goal, max_iter = 50000)
-tf = time.time()
-if moves != None:
-	print(f'Solved (using A*) in {round(tf - t, 4)} seconds with {len(moves)} moves')
+def find_piece(position, piece):
+	arr_position = np.array(position)
+	r, c = np.where(arr_position == piece)
+	r, c = r[0], c[0]
 	
-print_position(game)
+	return [r, c]
+
+def input_move():
+	move = ''
+	while len(move) != 1 or not move.isdigit():
+		move = input('Which piece do you want to move? ')
+		
+	return int(move)
+
+def playable(game = None, goal = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]):
+	if game is None:
+		game = generate_game()
+	
+	position = deepcopy(game)
+	while position != goal:
+		possible_moves = find_moves(position)
+		zero_pos = find_piece(position, 0)
+		print('Goal:')
+		print_position(goal)
+		print()
+		print('Make a move:')
+		print_position(position)
+		piece = input_move()
+		move = zero_pos + find_piece(position, piece)
+		while move not in possible_moves:
+			print('Invalid move')
+			piece = input_move()
+			move = zero_pos + find_piece(position, piece)
+			
+		position = make_move(position, move)
+		system(limpar)
+	
+	print_position(position)
+	print('Congratulations! You\'ve solved this puzzle!')
+
+system(limpar)
+playable()
