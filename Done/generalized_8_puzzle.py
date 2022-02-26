@@ -1,3 +1,4 @@
+import re
 import time
 import numpy as np
 import random as rd
@@ -22,20 +23,25 @@ def print_position(position):
 	h   = '\u2500'
 	v   = '\u2502'
 	
-	print(luc + (h + uc) * 2 + h + ruc)
-	for i in range(3):
+	n = len(str(len(position) ** 2 - 1))
+	print(luc + (n * h + uc) * (len(position) - 1) + n * h + ruc)
+	for i in range(len(position)):
 		line = v
-		for j in range(3):
+		for j in range(len(position)):
 			if position[i][j] == 0:
-				line += ' ' + v
+				line += n * ' ' + v
 			else:
-				line += str(position[i][j]) + v
+				pos = re.sub(' 0+', ' ', ' ' + str(position[i][j]).zfill(n))
+				if len(pos) > n:
+					pos = pos[1:]
+					
+				line += pos + v
 				
 		print(line)
-		if i != 2:
-			print(lc + (h + c) * 2 + h + rc)
+		if i != len(position) - 1:
+			print(lc + (n * h + c) * (len(position) - 1) + n * h + rc)
 		else:
-			print(lbc + (h + bc) * 2 + h + rbc)
+			print(lbc + (n * h + bc) * (len(position) - 1) + n * h + rbc)
 
 def check_parity(position):
 	game = []
@@ -48,13 +54,27 @@ def check_parity(position):
 	for i in range(len(game)):
 		parity += sum(game[i:] > game[i])
 		
+	if len(position) % 2 == 0:
+		r, c = find_piece(position, 0)
+		parity += r
+		
 	return parity % 2
 
-def generate_game(goal):
+def generate_game(n = 3):
+	if type(n) == int:
+		goal = [*range(n**2)]
+		end = goal.pop(0)
+		goal += [end]
+		goal = np.array(goal).reshape((n, n))
+		goal = goal.tolist()
+	else:
+		goal = deepcopy(n)
+		n = len(n)
+		
 	while True:
-		game = [*range(9)]
+		game = [*range(n**2)]
 		rd.shuffle(game)
-		game = np.array(game).reshape((3, 3))
+		game = np.array(game).reshape((n, n))
 		game = game.tolist()
 		if check_parity(game) == check_parity(goal):
 			return game
@@ -63,10 +83,10 @@ def find_moves(position):
 	r, c = find_piece(position, 0)
 	moves = []
 	for change in [-1, 1]:
-		if c + change in [0, 1, 2]:
+		if c + change in [*range(len(position))]:
 			moves.append([r, c, r, c + change])
 			
-		if r + change in [0, 1, 2]:
+		if r + change in [*range(len(position))]:
 			moves.append([r, c, r + change, c])
 			
 	return moves
@@ -81,13 +101,14 @@ def make_move(position, move):
 def make_moves(position, moves, printing = False):
 	new_position = deepcopy(position)
 	if printing:
+		print('Initial position:')
 		print_position(position)
 	
 	for move in moves:
 		new_position = make_move(new_position, move)
 		
 		if printing:
-			print(move)
+			print(f'Moving piece {new_position[move[0]][move[1]]}')
 			print_position(new_position)
 		
 	return new_position
@@ -116,7 +137,7 @@ def solve_game_bf(game, goal, max_iter = 10000):
 
 def h(position, goal):
 	cost = 0
-	for i in range(1, 9):
+	for i in range(1, len(position) ** 2):
 		r1, c1 = find_piece(position, i)
 		r2, c2 = find_piece(goal, i)
 		
@@ -187,16 +208,25 @@ def find_piece(position, piece):
 	
 	return [r, c]
 
-def input_move():
+def input_move(n = 3):
 	move = ''
-	while len(move) != 1 or not move.isdigit():
+	while len(move) > len(str(n ** 2 - 1)) or not move.isdigit():
 		move = input('Which piece do you want to move? ')
 		
 	return int(move)
 
-def playable(game = None, goal = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]):
+def playable(game = None, n = 3):
 	if game is None:
-		game = generate_game(goal)
+		if type(n) == int:
+			game = generate_game(n = n)
+			goal = [*range(n**2)]
+			end = goal.pop(0)
+			goal += [end]
+			goal = np.array(goal).reshape((n, n))
+			goal = goal.tolist()
+		else:
+			game = generate_game(goal = n)
+			goal = n
 	
 	position = deepcopy(game)
 	while position != goal:
@@ -207,11 +237,11 @@ def playable(game = None, goal = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]):
 		print()
 		print('Make a move:')
 		print_position(position)
-		piece = input_move()
+		piece = input_move(n = len(position))
 		move = zero_pos + find_piece(position, piece)
 		while move not in possible_moves:
 			print('Invalid move')
-			piece = input_move()
+			piece = input_move(n = len(position))
 			move = zero_pos + find_piece(position, piece)
 			
 		position = make_move(position, move)
@@ -221,4 +251,17 @@ def playable(game = None, goal = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]):
 	print('Congratulations! You\'ve solved this puzzle!')
 
 system(limpar)
-playable()
+playable(n = 4)
+
+'''
+n = 3
+game = generate_game(n)
+goal = [*range(n**2)]
+end = goal.pop(0)
+goal += [end]
+goal = np.array(goal).reshape((n, n))
+goal = goal.tolist()
+
+moves = solve_game_a_star(game, goal, max_iter = 1000000)
+make_moves(game, moves, printing = True)
+'''
