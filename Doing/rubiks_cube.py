@@ -276,42 +276,90 @@ def print_cube(cube):
 	print(line7)
 	print(line8)
 
-# fazer essa função
-def solve(cube, depth = 0, seq = [], max_depth = 20):
-	moves = [['F', 'F2', 'Fp'],
-			 ['B', 'B2', 'Bp'],
-			 ['R', 'R2', 'Rp'],
-			 ['L', 'L2', 'Lp'],
-			 ['U', 'U2', 'Up'],
-			 ['D', 'D2', 'Dp']]
+def heuristic(cube):
+	h_cost = 0
+	goal = deepcopy(cube)
+	for i in range(6):
+		for j in range(3):
+			for k in range(3):
+				goal[i][j, k] = goal[i][1, 1]
+		
+		h_cost += sum(sum(goal[i] == cube[i]))
+		
+	return h_cost
 	
-	for face in moves:
-		for move in face:
-			if seq != []:
-				if move[0] != seq[-1][0]:
-					new_cube = deepcopy(cube)
-					make_moves(new_cube, seq + [move])
-					if solved(new_cube):
-						return seq + [move]
-					elif depth < max_depth:
-						sol = solve(cube, depth = depth + 1, seq = seq + [move], max_depth = max_depth)
-						if sol != None:
-							return sol
-			else:
-				new_cube = deepcopy(cube)
-				make_moves(new_cube, seq + [move])
-				if solved(new_cube):
-					return seq + [move]
-				else:
-					sol = solve(cube, depth = depth + 1, seq = seq + [move], max_depth = max_depth)
-					if sol != None:
-						return sol
-		 
+def cost(cube, moves):
+	return heuristic(cube) + len(moves)
+
+def possible_moves(moves):
+	if moves == []:
+		return ['U', 'F', 'R', 'L', 'B', 'D']
+		
+	last_move = moves[-1]
+	if last_move in ['U', 'F', 'R']:
+		return ['U', 'F', 'R', 'L', 'B', 'D']
+	elif last_move == 'L':
+		return ['U', 'F', 'L', 'B', 'D']
+	elif last_move == 'B':
+		return ['U', 'R', 'L', 'B', 'D']
+	elif last_move == 'D':
+		return ['F', 'R', 'L', 'B', 'D']
+
+def solve(cube, max_it = 10000):
+	o_positions = [cube]
+	c_positions = []
+	o_moves = [[]]
+	k = 0
+	while k < max_it:
+		values = []
+		for i, pos in enumerate(o_positions):
+			moves = o_moves[i]
+			values.append(cost(pos, moves))
+			
+		i = np.argmin(values)
+		moves = o_moves.pop(i)
+		pos = o_positions.pop(i)
+		if solved(pos):
+			return moves
+			
+		pos_moves = possible_moves(moves)
+		for mov in pos_moves:
+			aux_pos = deepcopy(pos)
+			eval(mov + '(aux_pos)')
+			added = False
+			for o_pos in o_positions:
+				count = 0
+				for i in range(6):
+					if (aux_pos[i] == o_pos[i]).all():
+						count += 1
+						
+				if count == 6:
+					added = True
+					break
+					
+			if not added:
+				for c_pos in c_positions:
+					count = 0
+					for i in range(6):
+						if (aux_pos[i] == c_pos[i]).all():
+							count += 1
+							
+					if count == 6:
+						added = True
+						break
+						
+			if not added:
+				o_positions.append(aux_pos)
+				o_moves.append(moves + [mov])
+				
+		c_positions.append(pos)
+		k += 1
+
 sequence = ['Up', 'L2', 'D2', 'F2', 'R2', 'B2', 'R2', 'F2', 'D2', 'Lp', 'Up', 'Rp', 'B', 'Fp', 'Up']
-sequence = ['U2', 'D2', 'L2', 'R2']#, 'F2', 'B2']
+sequence = ['U2']#, 'D2', 'L2', 'R2']#, 'F2', 'B2']
 make_moves(cube, sequence)
 print_cube(cube)
-sol = solve(cube, depth = 0, seq = [], max_depth = 5)
+sol = solve(cube)
 make_moves(cube, sol)
 print(sol)
 print_cube(cube)
