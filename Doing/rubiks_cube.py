@@ -284,7 +284,7 @@ def heuristic(cube):
 			for k in range(3):
 				goal[i][j, k] = goal[i][1, 1]
 		
-		h_cost += sum(sum(goal[i] == cube[i]))
+		h_cost += sum(sum(goal[i] != cube[i]))
 		
 	return h_cost
 	
@@ -356,7 +356,7 @@ def solve(cube, max_it = 10000):
 		k += 1
 
 sequence = ['Up', 'L2', 'D2', 'F2', 'R2', 'B2', 'R2', 'F2', 'D2', 'Lp', 'Up', 'Rp', 'B', 'Fp', 'Up']
-sequence = ['U2']#, 'D2', 'L2', 'R2']#, 'F2', 'B2']
+sequence = ['U2', 'D2']#, 'L2', 'R2']#, 'F2', 'B2']
 make_moves(cube, sequence)
 print_cube(cube)
 sol = solve(cube)
