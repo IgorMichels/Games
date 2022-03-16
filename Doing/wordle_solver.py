@@ -41,22 +41,6 @@ def initial_guess(word_list):
 	
 	return choice(suggestions)
 
-def make_choice(word_list):
-	distances = np.zeros((len(word_list), len(word_list)))
-	for i in range(len(word_list)):
-		for j in range(len(word_list)):
-			distances[i, j] = distance(word_list[i], word_list[j])
-			
-	distances += distances.T
-	distances = np.sum(distances, axis = 1)
-	min_distance = np.min(distances)
-	positions = np.where(distances == min_distance)
-	suggestions = []
-	for pos in positions:
-		suggestions += [word_list[pos[0]]]
-	
-	return choice(suggestions)
-
 def choose_word(word_list, have = {}, not_have = [' '], form = None):
 	if form == None:
 		n = str(len(word_list[0]))
@@ -89,9 +73,9 @@ def choose_word(word_list, have = {}, not_have = [' '], form = None):
 	if suggests == []:
 		return None
 	
-	return make_choice(suggests)
+	return choice(suggests)
 
-def play():
+def solve():
 	n = int(input('How many letters have the word?\n'))
 	t = int(input('How many turns do you have?\n'))
 	words = preprocessing()
@@ -139,7 +123,7 @@ def play():
 		
 		turns += 1
 
-def choose_word(word_list, possibilities, have = {}):
+def choose_word_re(word_list, possibilities, have = {}):
 	suggests = []
 	word_list = [word for word in re.findall(''.join(possibilities), ' '.join(word_list))]
 	if word_list == []:
@@ -157,9 +141,9 @@ def choose_word(word_list, possibilities, have = {}):
 	if suggests == []:
 		return None
 	
-	return make_choice(suggests)
+	return choice(suggests)
 
-def play():
+def smart_solve():
 	n = int(input('How many letters have the word?\n'))
 	t = int(input('How many turns do you have?\n'))
 	possibilities = ['[qwertyuiopasdfghjklzxcvbnm]' for i in range(n)]
@@ -177,7 +161,7 @@ def play():
 			if turns == 0:
 				guess = initial_guess(words)
 			else:
-				guess = choose_word(words, possibilities, have = have)
+				guess = choose_word_re(words, possibilities, have = have)
 			
 			print()
 			print(f'My guess is the word: {guess}')
@@ -213,4 +197,4 @@ def play():
 		
 		turns += 1
 
-play()
+smart_solve()
