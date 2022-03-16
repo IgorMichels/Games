@@ -107,7 +107,6 @@ def play():
 				words.remove(guess)
 			
 			if turns == 0:
-				# guess = choose_word(words, have = have, not_have = not_have, form = form)
 				guess = initial_guess(words)
 			else:
 				guess = choose_word(words, have = have, not_have = not_have, form = form)
@@ -137,6 +136,80 @@ def play():
 		words.remove(guess)
 		if '.' not in form:
 			return form
+		
+		turns += 1
+
+def choose_word(word_list, possibilities, have = {}):
+	suggests = []
+	word_list = [word for word in re.findall(''.join(possibilities), ' '.join(word_list))]
+	if word_list == []:
+		return None
+	
+	for word in word_list:
+		out = False
+		for letter in have.keys():
+			if word.count(letter) < have[letter]:
+				out = True
+		
+		if not out:
+			suggests += [word]
+	
+	if suggests == []:
+		return None
+	
+	return make_choice(suggests)
+
+def play():
+	n = int(input('How many letters have the word?\n'))
+	t = int(input('How many turns do you have?\n'))
+	possibilities = ['[qwertyuiopasdfghjklzxcvbnm]' for i in range(n)]
+	words = preprocessing()
+	words = words[n]
+	turns = 0
+	have = {}
+	form = '.' * n
+	while turns < t:
+		signal = ''
+		while not signal.startswith('y'):
+			if signal.startswith('n'):
+				words.remove(guess)
+			
+			if turns == 0:
+				guess = initial_guess(words)
+			else:
+				guess = choose_word(words, possibilities, have = have)
+			
+			print()
+			print(f'My guess is the word: {guess}')
+			print()
+			
+			signal = input('Did this guess work? [y/n]\n').lower()
+		
+		included = []
+		for pos, letter in enumerate(guess):
+			ans = input(f'The letter {letter} is in the secret word? [y/n]\n').lower()
+			if ans.startswith('n'):
+				aux = list(possibilities[pos])
+				aux.remove(letter)
+				possibilities[pos] = ''.join(aux)
+			else:
+				if letter in included:
+					have[letter] += 1
+				else:
+					have[letter] = 1
+					included.append(letter)
+				
+				ans = input('Is this letter in its real position? [y/n]\n')
+				if ans.startswith('y'):
+					possibilities[pos] = letter
+				else:
+					aux = list(possibilities[pos])
+					aux.remove(letter)
+					possibilities[pos] = ''.join(aux)
+					
+		words.remove(guess)
+		if len(''.join(possibilities)) == n:
+			return ''.join(possibilities)
 		
 		turns += 1
 
