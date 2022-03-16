@@ -1,74 +1,63 @@
 import re
+import numpy as np
 from random import choice
 from itertools import product
+from nltk.corpus import words
 from Levenshtein import distance
 
 def preprocessing():
-	file = open('words.txt')
-	words = file.readlines()
-	file.close()
-	words = [word.strip() for word in words]
 	dict_words = {}
-	for word in words:
+	for word in words.words():
 		if len(word) not in dict_words:
-			dict_words[len(word)] = [word]
+			dict_words[len(word)] = [word.lower()]
 		else:
-			dict_words[len(word)] += [word]
+			dict_words[len(word)].append(word.lower())
 	
 	return dict_words
 
-def make_string(*args):
-	if type(args[0]) != list:
-		if len(args) == 1:
-			return args[0]
-	else:
-		args = args[0]
-	
-	args = list(args)
-	set_a = args.pop(0)
-	if type(args[0][0]) == list:
-		args = [arg for arg in args[0]]
-	
-	set_b = args.pop(0)
-	strings = []
-	for item in product(set_a, set_b):
-		strings += [''.join(item)]
-	
-	if args != []:
-		args = [strings] + args
-		return make_string(args)
-	else:
-		return strings
-
-def frequency(word_list):
-	n = len(word_list[0])
-	frequencies = {}
-	for word in word_list:
-		for i in range(n):
-			if word[i] not in frequencies:
-				frequencies[word[i]] = [0 for i in range(n)]
-			
-			frequencies[word[i]][i] += 1
-	
-	return frequencies
-
-def initial_guess(word_list, letters = 5):
-	n = len(word_list[0])
-	frequencies = frequency(word_list)
-	args = []
-	for i in range(n):
-		aux = []
-		for key, value in frequencies.items():
-			aux += [[key, value[i]]]
+def initial_guess(word_list):
+	points = np.zeros((len(word_list)))
+	for i, word in enumerate(word_list):
+		if 'a' in word:
+			points[i] += 1
 		
-		aux.sort(reverse = True, key = lambda x : x[1])
-		args += [[]]
-		for j in range(min(letters, len(aux))):
-			args[-1] += [aux[j][0]]
-			
-	return make_string(args)
+		if 'e' in word:
+			points[i] += 1
+		
+		if 'i' in word:
+			points[i] += 1
+		
+		if 'o' in word:
+			points[i] += 1
+		
+		if 'u' in word:
+			points[i] += 1
+		
+	max_point = np.max(points)
+	positions = np.where(points == max_point)
+	suggestions = []
+	for pos in positions:
+		suggestions += [word_list[pos[0]]]
+	
+	return choice(suggestions)
 
-def choose_word(word_list, have = [], not_have = [' '], form = None):
+def make_choice(word_list):
+	distances = np.zeros((len(word_list), len(word_list)))
+	for i in range(len(word_list)):
+		for j in range(len(word_list)):
+			distances[i, j] = distance(word_list[i], word_list[j])
+			
+	distances += distances.T
+	distances = np.sum(distances, axis = 1)
+	min_distance = np.min(distances)
+	positions = np.where(distances == min_distance)
+	suggestions = []
+	for pos in positions:
+		suggestions += [word_list[pos[0]]]
+	
+	return choice(suggestions)
+
+def choose_word(word_list, have = {}, not_have = [' '], form = None):
 	if form == None:
 		n = str(len(word_list[0]))
 		form = '\S{' + n + '}'
@@ -83,8 +72,11 @@ def choose_word(word_list, have = [], not_have = [' '], form = None):
 	
 	for word in word_list:
 		out = False
-		for letter in have:
-			if letter not in word:
+		for letter in have.keys():
+			if letter in not_have:
+				not_have.remove(letter)
+			
+			if word.count(letter) < have[letter]:
 				out = True
 		
 		for letter in not_have:
@@ -97,7 +89,7 @@ def choose_word(word_list, have = [], not_have = [' '], form = None):
 	if suggests == []:
 		return None
 	
-	return choice(suggests)
+	return make_choice(suggests)
 
 def play():
 	n = int(input('How many letters have the word?\n'))
@@ -105,29 +97,47 @@ def play():
 	words = preprocessing()
 	words = words[n]
 	turns = 0
-	have = []
+	have = {}
 	not_have = []
 	form = '.' * n
 	while turns < t:
-		if turns == 0:
-			guess = choice(words)
-		else:
-			guess = choose_word(word_list, have = have, not_have = not_have, form = form)
+		signal = ''
+		while not signal.startswith('y'):
+			if signal.startswith('n'):
+				words.remove(guess)
+			
+			if turns == 0:
+				# guess = choose_word(words, have = have, not_have = not_have, form = form)
+				guess = initial_guess(words)
+			else:
+				guess = choose_word(words, have = have, not_have = not_have, form = form)
+			
+			print()
+			print(f'My guess is the word: {guess}')
+			print()
+			
+			signal = input('Did this guess work? [y/n]\n').lower()
 		
-		print()
-		print(f'My guess is the word: {guess}')
-		print()
+		included = []
 		for pos, letter in enumerate(guess):
 			ans = input(f'The letter {letter} is in the secret word? [y/n]\n').lower()
 			if ans.startswith('n'):
 				not_have.append(letter)
 			else:
-				have.append(letter)
+				if letter in included:
+					have[letter] += 1
+				else:
+					have[letter] = 1
+					included.append(letter)
+				
 				ans = input('Is this letter in its real position? [y/n]\n')
 				if ans.startswith('y'):
 					form = form[:pos] + letter + form[pos + 1:]
 		
+		words.remove(guess)
 		if '.' not in form:
 			return form
+		
+		turns += 1
 
 play()
